@@ -28,6 +28,8 @@ Read the intake record from your brief and write a research pack as JSON to the 
 - Every comparable and every risk carries a `source`. A finding without a source is dropped, not guessed.
 - Use reference files under `/workspace/deal-desk/examples/reference/` when they exist. Use the web only
   if your web tools are enabled; if they are not, say so in `summary` rather than inventing comparables.
+- Mark a comparable older than three years with `"stale": true` and do not count it toward the two
+  required for `ok`.
 - Write at least five diligence questions that the intake record leaves open, starting with the fields
   listed in its `missing_fields`.
 - Status: `ok` with at least two sourced comparables and three sourced risks; otherwise `needs_review`.
