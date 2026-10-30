@@ -3,14 +3,19 @@ name: ci
 on:
   pull_request:
   push:
-    branches: [main, usage-logs]
+    branches: [main]
+  # usage-logs has no workflow files of its own (it shares no history with main),
+  # so the ledger is verified from main: on every push here, every six hours, and on demand.
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
   tests:
-    if: github.ref != 'refs/heads/usage-logs'
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,11 +26,33 @@ jobs:
       - run: gatehouse registry   # fails if a pipeline step is not on the orchestrator roster
       - run: pytest -q
 
-  # Shows the plan for agent and skill changes on every pull request; applies it only after merge.
-  # Needs repository variable ANT_VERSION (1.40.0 or later) and secret ANTHROPIC_API_KEY
-  # for a key scoped to the deal-desk workspace.
+  verify-ledger:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Fetch usage-logs
+        id: fetch
+        run: |
+          if git ls-remote --exit-code --heads origin usage-logs >/dev/null; then
+            git fetch origin usage-logs:usage-logs
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No usage-logs branch yet; nothing to verify."
+          fi
+      - uses: actions/setup-python@v5
+        if: steps.fetch.outputs.present == 'true'
+        with: {python-version: "3.12"}
+      - if: steps.fetch.outputs.present == 'true'
+        run: pip install -e . && gatehouse verify
+
+  # The two jobs below sync agents and skills to Claude Managed Agents. They are skipped
+  # until the repo is connected to a Claude workspace: set repository variable ANT_VERSION
+  # (1.40.0 or later) and secret ANTHROPIC_API_KEY for a key scoped to the deal-desk workspace.
+
+  # Shows the plan for agent and skill changes on every pull request.
   ant-apply-dry-run:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && vars.ANT_VERSION != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -35,8 +62,9 @@ jobs:
       - run: ant apply --dry-run -v agents environments
         env: {ANTHROPIC_API_KEY: "${{ secrets.ANTHROPIC_API_KEY }}"}
 
+  # Applies the plan after merge; the merge is the approval.
   ant-apply:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.ANT_VERSION != ''
     needs: tests
     runs-on: ubuntu-latest
     permissions:
@@ -46,7 +74,7 @@ jobs:
       - uses: actions/setup-go@v5
         with: {go-version: "1.25"}
       - run: go install github.com/anthropics/anthropic-cli/cmd/ant@v${{ vars.ANT_VERSION }}
-      - run: ant apply --yes agents environments   # the merge is the approval
+      - run: ant apply --yes agents environments
         env: {ANTHROPIC_API_KEY: "${{ secrets.ANTHROPIC_API_KEY }}"}
       - run: |
           git config user.name gatehouse-bot
@@ -54,15 +82,3 @@ jobs:
           git add claude-lock.json
           git diff --cached --quiet || git commit -m "ant apply: record agent versions [skip ci]"
           git push
-
-  verify-ledger:
-    if: github.ref == 'refs/heads/usage-logs'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with: {fetch-depth: 0, ref: main}
-      - run: git fetch origin usage-logs:usage-logs
-      - uses: actions/setup-python@v5
-        with: {python-version: "3.12"}
-      - run: pip install -e .
-      - run: gatehouse verify

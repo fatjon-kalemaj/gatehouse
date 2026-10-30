@@ -204,7 +204,8 @@ How each line is enforced:
   `agents/`, `skills/`, `pipelines/`, `schemas/`, `governance/`, required checks `tests` and
   `ant-apply-dry-run`, no force pushes.
 - **Repository rules on `usage-logs`:** only the `gatehouse-bot` app may push; no force pushes; no
-  deletion. `gatehouse verify` also runs in CI on every push to the branch and fails on any rewrite.
+  deletion. `gatehouse verify` also runs in CI from `main` every six hours and on every push to `main`,
+  and fails on any rewrite.
 - **Claude workspace:** the deal-desk agents live in their own workspace. Only the gateway's key and
   the CI key can use it; Console access for that workspace is limited to maintainers, who use the
   session viewer for debugging.
