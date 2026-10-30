@@ -1,0 +1,50 @@
+# Run-time policy. Checked by the gateway before a session starts and again on
+# every step report. The authoritative copy lives on the usage-logs branch.
+version: 1
+
+budgets:
+  # Per-run cap in USD. The lower of this and the pipeline's own limit applies.
+  # In the cloud it becomes the Managed Agents session budget, so the platform enforces it.
+  default_max_cost_usd: 6.00
+
+approvals:
+  - id: large-deal
+    pipeline: deal-intake
+    when: {deal_size_usd_gt: 500000000}
+    require: approval_ticket
+    approver_groups: [ops-admin]
+    reason: Deals above $500M need an approval ticket before any agent reads them.
+
+input_screening:
+  - code: pii.ssn
+    pattern: '\b\d{3}-\d{2}-\d{4}\b'
+    action: block
+    reason: Personal identifiers must not enter an agent session.
+  - code: pii.account_number
+    pattern: '(?i)\b(acct|account)\s*(no\.?|number|#)?\s*:?\s*\d{8,}\b'
+    action: block
+    reason: Account numbers must not enter an agent session.
+  - code: mnpi.marker
+    pattern: '(?i)\bMNPI\b|material non-public'
+    action: block
+    reason: Material non-public information goes to compliance, not to agents.
+  - code: restricted.list
+    terms: [Project Halcyon, Project Ironwood]
+    action: block
+    reason: Names on the restricted list.
+
+step_issues:
+  # Issue codes in a worker's step report that count as policy violations.
+  pii.present: high
+  claim.unsupported: medium
+
+logging:
+  # Inputs and outputs are logged as a SHA-256 digest plus a short summary, never in full.
+  inputs: digest_and_summary
+  outputs: digest_and_summary
+  retention_years: 7
+
+change_control:
+  # Documented here and enforced by GitHub repository rules (see README, "Access model").
+  main: {required_reviews: 2, codeowners: true, required_checks: [tests, ant-apply-dry-run]}
+  usage-logs: {writers: [gatehouse-bot], force_push: false, deletion: false}
