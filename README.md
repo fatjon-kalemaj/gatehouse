@@ -52,13 +52,17 @@ gatehouse run deal-intake --input examples/deals/alder-industrial-services.json 
 ```
 
 ```
-run_20261031_9f2c1a7e  SUCCEEDED  user=maya.patel@example.com  cost=$0.36
-  1. deal-intake    ok              14.4s  $0.028  b28460acc1  Normalized Project Alder: private_equity, industrial services, $180.0M.
-  2. deal-research  ok              28.1s  $0.052  b28460acc1  3 comparables, 3 risks, 2 open questions; web tools off, reference notes only.
-  3. deal-memo      ok              44.3s  $0.082  b28460acc1  Memo written; recommendation: Advance to diligence.
-  4. deal-qa        ok              21.9s  $0.061  b28460acc1  All checks passed.
-  memo: .gatehouse/runs/run_20261031_9f2c1a7e/memo.md
+run_20261030_40b6036c  SUCCEEDED  user=maya.patel@example.com  cost=$0.35
+  1. deal-intake    ok              13.6s  $0.026  ea2fdcd662  Normalized Project Alder: private_equity, industrial services, $180.0M.
+  2. deal-research  ok              24.7s  $0.052  4662f12cda  3 comparables, 3 risks, 2 open questions; web tools off, reference notes only.
+  3. deal-memo      ok              36.6s  $0.072  ea2fdcd662  Memo written; recommendation: Advance to diligence.
+  4. deal-qa        ok              17.3s  $0.049  ea2fdcd662  All checks passed.
+  memo: .gatehouse/runs/run_20261030_40b6036c/memo.md
 ```
+
+The hash after each step is the commit of that agent's skill. Here `deal-research` shows a newer commit
+than the others because its skill was revised after the first commit; the dashboard's Agents table shows
+both versions and how many runs used each.
 
 Try the paths that should not succeed:
 
@@ -225,22 +229,22 @@ One run record, trimmed:
 
 ```json
 {
-  "schema": "gatehouse.run/v1", "seq": 141, "run_id": "run_20261031_9f2c1a7e",
+  "schema": "gatehouse.run/v1", "seq": 140, "run_id": "run_20261030_40b6036c",
   "pipeline": "deal-intake", "user": "maya.patel@example.com", "groups": ["deal-team"],
   "surface": "dry-run", "simulated": true,
-  "started_at": "2026-10-31T04:01:12+00:00", "ended_at": "2026-10-31T04:03:00+00:00", "duration_ms": 108200,
-  "status": "succeeded", "repo_commit": "b28460acc1…",
-  "orchestrator": {"agent": "deal-desk-orchestrator", "skill_commit": "b28460acc1…", "skill_tree": "aaa43af124…"},
+  "started_at": "2026-10-30T23:20:48+00:00", "ended_at": "2026-10-30T23:22:25+00:00", "duration_ms": 97355,
+  "status": "succeeded", "repo_commit": "4662f12cda…",
+  "orchestrator": {"agent": "deal-desk-orchestrator", "skill_commit": "ea2fdcd662…", "skill_tree": "aaa43af124…"},
   "input": {"ref": "examples/deals/alder-industrial-services.json", "sha256": "sha256:…", "summary": "Project Alder, private_equity, industrial services, US Midwest"},
   "steps": [
     {"index": 1, "agent": "deal-intake", "model": "claude-opus-5-5", "effort": "low",
-     "skill": "deal-intake", "skill_commit": "b28460acc1…", "skill_tree": "a6104cfd21…",
+     "skill": "deal-intake", "skill_commit": "ea2fdcd662…", "skill_tree": "a6104cfd21…",
      "status": "ok", "attempts": 1, "duration_ms": 14400,
      "tokens": {"input": 2310, "output": 352, "cache_read": 4820, "cache_write": 2410},
      "cost_usd": 0.028, "summary": "Normalized Project Alder: …", "issues": [], "output_digest": "sha256:…"}
   ],
   "tokens": {"input": 30111, "output": 6040, "cache_read": 60212, "cache_write": 12950},
-  "cost_usd": 0.36, "errors": [],
+  "cost_usd": 0.35, "errors": [],
   "policy": {"decision": "allow", "max_cost_usd": 6.0, "violations": []},
   "prev_hash": "sha256:…", "hash": "sha256:…"
 }

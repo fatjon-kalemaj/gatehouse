@@ -105,7 +105,9 @@ tr.detail td { background: var(--surface-2); padding: 10px 12px 14px; }
 .step { display: grid; grid-template-columns: 22px 120px 110px 1fr auto; gap: 10px; align-items: baseline; font-size: 12px; }
 @media (max-width: 720px) { .step { grid-template-columns: 22px 1fr; } .step > :nth-child(n+3) { grid-column: 2; } }
 .vbars { display: grid; gap: 10px; }
-.vbar { display: grid; grid-template-columns: minmax(120px, 1fr) 3fr 36px; gap: 10px; align-items: center; font-size: 13px; }
+.vbar { display: grid; grid-template-columns: minmax(170px, 1.4fr) 2fr 32px; gap: 10px; align-items: center; font-size: 13px; }
+.vbar > div:first-child { min-width: 0; }
+.vbar .mono { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .vbar .track { height: 10px; border-radius: 4px; background: var(--surface-2); position: relative; }
 .vbar .track b { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; }
 .gov { display: grid; gap: 12px; font-size: 13px; }
@@ -280,6 +282,8 @@ function renderFilters() {
   $("#f-pipeline").onchange = (e) => { state.pipeline = e.target.value; render(); };
   $("#f-user").onchange = (e) => { state.user = e.target.value; render(); };
   let saved = "auto"; try { saved = localStorage.getItem("gh-theme") || "auto"; } catch (_) {}
+  const forced = new URLSearchParams(location.search).get("theme");
+  if (["auto", "light", "dark"].includes(forced)) saved = forced;
   const applyTheme = (t) => {
     if (t === "auto") document.documentElement.removeAttribute("data-theme"); else document.documentElement.setAttribute("data-theme", t);
     [...$("#theme").children].forEach(x => x.setAttribute("aria-pressed", x.dataset.theme === t));
@@ -461,7 +465,7 @@ function renderViolations({ audit }) {
   if (!rows.length) { $("#violations").innerHTML = `<div class="empty">No violations in this range.</div>`; return; }
   const max = Math.max(...rows.map(r => r.n));
   $("#violations").innerHTML = rows.map(r => `<div class="vbar" title="${esc(r.code)}">
-    <div><div>${esc(RULE_LABEL[r.code] || r.code)}</div><div class="muted mono" style="font-size:11px">${esc(r.code)} · ${esc(r.sev)}</div></div>
+    <div><div>${esc(RULE_LABEL[r.code] || r.code)}</div><div class="muted mono" style="font-size:11px" title="${esc(r.code)}">${esc(r.code)} · ${esc(r.sev)}</div></div>
     <div class="track"><b style="width:${(r.n / max * 100).toFixed(1)}%;background:${SEV[r.sev] || "var(--muted)"}"></b></div>
     <div class="num" style="text-align:right">${r.n}</div></div>`).join("") +
     `<div class="legend" style="margin:6px 0 0"><span><i style="background:var(--critical)"></i>High severity</span><span><i style="background:var(--serious)"></i>Medium severity</span></div>`;
@@ -505,7 +509,7 @@ function renderAudit({ audit }) {
     : a.type === "governance.changed" ? `${esc(a.detail.user)}: ${esc((a.detail.before || []).join(", ") || "none")} → ${esc((a.detail.after || []).join(", ") || "none")}`
     : a.type === "approval.used" ? `<span class="mono">${esc(a.detail.ticket)}</span>` : esc(a.detail && a.detail.pipeline || "");
   $("#audit").innerHTML = `<thead><tr><th class="num">#</th><th>When</th><th>Event</th><th>Actor</th><th>Detail</th></tr></thead><tbody>` +
-    rows.map(a => `<tr><td class="num muted">${a.seq}</td><td class="muted" style="white-space:nowrap">${esc(fmtTime(a.at))}</td><td>${esc(AUDIT_LABEL[a.type] || a.type)}</td><td>${esc((a.actor || "").split("@")[0])}</td><td>${detail(a)}</td></tr>`).join("") + `</tbody>`;
+    rows.map(a => `<tr><td class="num muted">${a.seq}</td><td class="muted" style="white-space:nowrap">${esc(fmtTime(a.at))}</td><td style="white-space:nowrap">${esc(AUDIT_LABEL[a.type] || a.type)}</td><td>${esc((a.actor || "").split("@")[0])}</td><td>${detail(a)}</td></tr>`).join("") + `</tbody>`;
 }
 
 /* ---------- governance ---------- */
