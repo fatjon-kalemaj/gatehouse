@@ -2,6 +2,10 @@
 
 One governed door to a private repo of Claude agents.
 
+![Gatehouse architecture](docs/architecture.svg)
+
+*Rendered PNG: [docs/architecture.png](docs/architecture.png). A Mermaid version is at the end of this file.*
+
 Employees talk to a single orchestrator. The orchestrator runs worker agents from a private repo one
 step at a time, and checks each structured report before the next step starts. Every run is written to
 an append-only, hash-chained ledger on a `usage-logs` branch of the same repo, next to the allowlist,
@@ -9,10 +13,6 @@ the policy and the audit trail. A dashboard is built from that branch.
 
 The example pipeline is a private-markets deal desk: **intake → research → memo → QA**. All people,
 deals and figures in this repo are synthetic.
-
-![Gatehouse architecture](docs/architecture.svg)
-
-*Rendered PNG: [docs/architecture.png](docs/architecture.png). A Mermaid version is at the end of this file.*
 
 ![Gatehouse monitor dashboard](docs/dashboard.png)
 
@@ -26,6 +26,7 @@ deals and figures in this repo are synthetic.
 - [Where the orchestrator runs, and why](#where-the-orchestrator-runs-and-why)
 - [Access model](#access-model)
 - [The usage-logs branch](#the-usage-logs-branch)
+- [Daily ledger audit and alerts](#daily-ledger-audit-and-alerts)
 - [Governance](#governance)
 - [Dashboard](#dashboard)
 - [Running in the cloud](#running-in-the-cloud)
@@ -204,8 +205,8 @@ How each line is enforced:
   `agents/`, `skills/`, `pipelines/`, `schemas/`, `governance/`, required checks `tests` and
   `ant-apply-dry-run`, no force pushes.
 - **Repository rules on `usage-logs`:** only the `gatehouse-bot` app may push; no force pushes; no
-  deletion. `gatehouse verify` also runs in CI from `main` every six hours and on every push to `main`,
-  and fails on any rewrite.
+  deletion. A daily audit fails and raises an alert if the branch is edited or rewritten anyway (see
+  [Daily ledger audit and alerts](#daily-ledger-audit-and-alerts)).
 - **Claude workspace:** the deal-desk agents live in their own workspace. Only the gateway's key and
   the CI key can use it; Console access for that workspace is limited to maintainers, who use the
   session viewer for debugging.
@@ -262,9 +263,43 @@ What makes it trustworthy:
   by appending, if a file was deleted, or if a governance file changed without an audit event in the same
   commit.
 - **Hash-chained.** Each record carries `seq`, `prev_hash` and `hash` (SHA-256 over canonical JSON), so
-  editing a line breaks the chain even if someone also rewrote git history.
+  editing a line breaks the chain. Someone who rewrites git history and recomputes every hash is caught
+  by the audit checkpoints below.
 - **Data minimization.** Inputs and outputs are logged as a SHA-256 digest plus a one-line summary,
   never in full. Screening violations never copy the matched value.
+
+## Daily ledger audit and alerts
+
+[`.github/workflows/ledger-audit.yml`](.github/workflows/ledger-audit.yml) audits `usage-logs` every day
+at 06:00 UTC, on demand, and whenever the ledger code changes. It runs from `main`, because
+`usage-logs` shares no history with `main` and carries no workflow files that an editor could disable.
+
+Each run does three things:
+
+1. **Verify.** `gatehouse verify --since <last checkpoint>` fails if any line in `logs/runs/*.jsonl` or
+   `governance/audit.jsonl` was edited, reordered or deleted (hash chain and append-only diff of every
+   commit), if a governance file changed without an audit event, or if the last audited commit is no
+   longer part of the branch, which means the history was rewritten after that audit.
+2. **Checkpoint.** On a clean result it tags the audited tip as `ledger/verified-YYYYMMDDTHHMMZ`. A
+   tag ruleset stops those tags from being moved or deleted, so a rewrite cannot also erase the evidence.
+3. **Alert.** On failure the job fails, and it opens an issue labeled `ledger-alert` with the verify
+   output, the branch tip and the last good checkpoint (or comments on the open one). GitHub notifies
+   the repository's watchers of the new issue, and emails a failed scheduled run to whoever last changed
+   the schedule. Point a Slack or email integration at the `ledger-alert` label to route it further.
+
+Protection configured on this repository (GitHub rulesets):
+
+| Ruleset | Target | Rules | Who can bypass |
+|---|---|---|---|
+| `usage-logs-append-only` | branch `usage-logs` | no deletion, no force push, updates restricted | repository admins (add the `gatehouse-bot` app in production) |
+| `main-protection` | branch `main` | no deletion, no force push | repository admins |
+| `ledger-checkpoints` | tags `ledger/*` | no deletion, no moving | nobody |
+
+The rules stop most edits; the audit catches the ones made by someone who can bypass them.
+
+To see the alert path work, edit one character of a record on a scratch copy of the branch and run
+`gatehouse verify --since <tag>`; the tests in [`tests/test_ledger.py`](tests/test_ledger.py) do the
+same for line edits, governance edits and history rewrites.
 
 ## Governance
 

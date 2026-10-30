@@ -4,10 +4,6 @@ on:
   pull_request:
   push:
     branches: [main]
-  # usage-logs has no workflow files of its own (it shares no history with main),
-  # so the ledger is verified from main: on every push here, every six hours, and on demand.
-  schedule:
-    - cron: "17 */6 * * *"
   workflow_dispatch:
 
 permissions:
@@ -15,7 +11,6 @@ permissions:
 
 jobs:
   tests:
-    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,26 +20,6 @@ jobs:
       - run: pip install -e '.[dev]'
       - run: gatehouse registry   # fails if a pipeline step is not on the orchestrator roster
       - run: pytest -q
-
-  verify-ledger:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with: {fetch-depth: 0}
-      - name: Fetch usage-logs
-        id: fetch
-        run: |
-          if git ls-remote --exit-code --heads origin usage-logs >/dev/null; then
-            git fetch origin usage-logs:usage-logs
-            echo "present=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "No usage-logs branch yet; nothing to verify."
-          fi
-      - uses: actions/setup-python@v5
-        if: steps.fetch.outputs.present == 'true'
-        with: {python-version: "3.12"}
-      - if: steps.fetch.outputs.present == 'true'
-        run: pip install -e . && gatehouse verify
 
   # The two jobs below sync agents and skills to Claude Managed Agents. They are skipped
   # until the repo is connected to a Claude workspace: set repository variable ANT_VERSION

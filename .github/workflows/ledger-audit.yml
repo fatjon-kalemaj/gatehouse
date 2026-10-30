@@ -1,0 +1,88 @@
+name: ledger-audit
+
+# Audits the usage-logs branch every day. It fails, and opens (or updates) an issue labeled
+# `ledger-alert`, if any run record or audit event was edited or deleted, if a governance file
+# changed without an audit event, or if the branch history was rewritten since the last audit.
+# usage-logs has no workflow files of its own, so this runs from main.
+
+on:
+  schedule:
+    - cron: "0 6 * * *"   # daily, 06:00 UTC
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [gatehouse/ledger.py, .github/workflows/ledger-audit.yml]
+
+permissions:
+  contents: write   # to push the checkpoint tag after a clean audit
+  issues: write     # to raise the alert
+
+concurrency:
+  group: ledger-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+
+      - name: Fetch usage-logs and checkpoints
+        run: |
+          git fetch --tags origin
+          git fetch origin usage-logs:usage-logs
+
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: pip install -e .
+
+      - name: Verify the ledger
+        id: verify
+        run: |
+          # Checkpoint tags are named ledger/verified-YYYYMMDDTHHMMZ, so name order is time order.
+          last=$(git tag --list 'ledger/verified-*' --sort=-refname | head -n 1)
+          echo "checkpoint=${last:-none}" >> "$GITHUB_OUTPUT"
+          set -o pipefail
+          if [ -n "$last" ]; then
+            gatehouse verify --since "$last" | tee verify.txt
+          else
+            gatehouse verify | tee verify.txt
+          fi
+
+      - name: Record a checkpoint
+        if: success()
+        run: |
+          tag="ledger/verified-$(date -u +%Y%m%dT%H%MZ)"
+          git tag "$tag" usage-logs
+          git push origin "refs/tags/$tag"
+          echo "Ledger verified; checkpoint $tag -> $(git rev-parse --short usage-logs)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Raise the alert
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          CHECKPOINT: ${{ steps.verify.outputs.checkpoint }}
+        run: |
+          gh label create ledger-alert --color B60205 --description "usage-logs failed its audit" --force
+          {
+            echo "The daily audit of \`usage-logs\` failed."
+            echo
+            echo "- Run: $RUN_URL"
+            echo "- Branch tip: \`$(git rev-parse usage-logs)\`"
+            echo "- Last good checkpoint: \`$CHECKPOINT\`"
+            echo
+            echo '```'
+            cat verify.txt 2>/dev/null || echo "(no verify output)"
+            echo '```'
+            echo
+            echo "Until this is resolved, treat run records after the last checkpoint as untrusted."
+          } > alert.md
+          cat alert.md >> "$GITHUB_STEP_SUMMARY"
+          open=$(gh issue list --label ledger-alert --state open --json number --jq '.[0].number')
+          if [ -n "$open" ]; then
+            gh issue comment "$open" --body-file alert.md
+          else
+            gh issue create --title "Ledger audit failed: usage-logs was modified" --label ledger-alert --body-file alert.md
+          fi

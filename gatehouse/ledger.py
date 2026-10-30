@@ -19,6 +19,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import subprocess
 import tempfile
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -45,6 +46,10 @@ def record_hash(record: dict) -> str:
 
 def runs_partition(ts: str) -> str:
     return f"{RUNS_PREFIX}{ts[:7]}.jsonl"
+
+
+def _is_ancestor(repo: Path, commit: str, ref: str) -> bool:
+    return subprocess.run(["git", "merge-base", "--is-ancestor", commit, ref], cwd=repo).returncode == 0
 
 
 class LedgerConflict(RuntimeError):
@@ -215,12 +220,26 @@ class Ledger:
 
     # ---------- verification ----------
 
-    def verify(self) -> VerifyReport:
-        """Check hash chains and that every commit on the branch only appended to append-only files."""
+    def verify(self, since: str | None = None) -> VerifyReport:
+        """Check hash chains and that every commit on the branch only appended to append-only files.
+
+        `since` is a checkpoint: a commit (or tag) of this branch that an earlier audit verified. If it is
+        no longer an ancestor of the branch tip, the branch history was rewritten after that audit, even if
+        the rewrite recomputed every hash.
+        """
         report = VerifyReport()
         if not self.exists():
             report.errors.append(f"branch {self.branch} does not exist")
             return report
+
+        if since:
+            checkpoint = rev_parse(self.repo, f"{since}^{{commit}}")
+            if checkpoint is None:
+                report.errors.append(f"checkpoint {since} not found")
+            elif not _is_ancestor(self.repo, checkpoint, self.ref):
+                report.errors.append(
+                    f"history rewritten: checkpoint {since} ({checkpoint[:10]}) is no longer part of {self.branch}"
+                )
 
         for name, records in (("runs", self.runs()), ("audit", self.audit())):
             prev = None

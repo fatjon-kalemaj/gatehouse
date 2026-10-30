@@ -73,3 +73,20 @@ def test_compare_and_swap_rejects_a_stale_parent(ledger_repo):
     commit = led._commit({"x.txt": "x"}, "stale", stale, None)
     with pytest.raises(LedgerConflict):
         led._move(commit, stale)
+
+
+def test_rewritten_history_fails_the_checkpoint(ledger_repo):
+    led = Ledger(ledger_repo)
+    led.append(runs=[rec(1)])
+    checkpoint = led.tip()
+    assert led.verify(since=checkpoint).ok
+    led.append(runs=[rec(2)])
+    assert led.verify(since=checkpoint).ok  # appending after the checkpoint is fine
+
+    # Rewrite: drop both runs and append a different one. Hashes are recomputed, so the chain is valid.
+    parent = subprocess.run(["git", "rev-parse", f"{checkpoint}~1"], cwd=ledger_repo, capture_output=True, text=True).stdout.strip()
+    subprocess.run(["git", "update-ref", "refs/heads/usage-logs", parent], cwd=ledger_repo, check=True)
+    led.append(runs=[{**rec(1), "status": "failed"}])
+    assert led.verify().ok
+    errors = led.verify(since=checkpoint).errors
+    assert any("history rewritten" in e for e in errors)

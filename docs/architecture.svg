@@ -127,8 +127,8 @@
   <text class="m" x="296" y="494">logs/runs/YYYY-MM.jsonl</text>
   <text class="m" x="296" y="512">governance/allowlist.yaml · policy.yaml</text>
   <text class="m" x="296" y="530">governance/audit.jsonl</text>
-  <text class="b" x="296" y="554">Append-only, hash-chained, verified on every build.</text>
-  <text class="b" x="296" y="571">Only gatehouse-bot can push. No force push, no delete.</text>
+  <text class="b" x="296" y="554">Append-only, hash-chained. Audited daily; any edit fails</text>
+  <text class="b" x="296" y="571">the job and opens an alert. Only gatehouse-bot pushes.</text>
 
   <rect class="box" x="790" y="446" width="426" height="134" rx="12"/>
   <text class="h2" x="806" y="472">branch main</text>

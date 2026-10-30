@@ -60,7 +60,7 @@ def cmd_run(args) -> int:
 
 
 def cmd_verify(args) -> int:
-    report = Ledger(_repo(args)).verify()
+    report = Ledger(_repo(args)).verify(since=args.since)
     print(f"commits={report.commits} runs={report.runs} audit_events={report.audit_events}")
     for e in report.errors:
         print(f"  FAIL {e}")
@@ -125,7 +125,9 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--json", action="store_true")
     run.set_defaults(fn=cmd_run)
 
-    sub.add_parser("verify", help="check hash chains and append-only history").set_defaults(fn=cmd_verify)
+    ver = sub.add_parser("verify", help="check hash chains and append-only history")
+    ver.add_argument("--since", help="a commit or tag of usage-logs verified earlier; fail if it is no longer in the history")
+    ver.set_defaults(fn=cmd_verify)
     sub.add_parser("registry", help="list agents, skills and their versions").set_defaults(fn=cmd_registry)
 
     for name, grant in (("grant", True), ("revoke", False)):
