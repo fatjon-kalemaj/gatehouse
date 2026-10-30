@@ -1,0 +1,16 @@
+{
+  "deal_name": "Project Cedar",
+  "source": "real estate team intake form (synthetic)",
+  "teaser": "Portfolio of eleven last-mile warehouses across three metros, 96% leased. Seller indicates pricing around $310M.",
+  "fields": {
+    "asset_class": "real_estate",
+    "strategy": "core_plus",
+    "sector": "logistics real estate",
+    "geography": "US Sunbelt",
+    "deal_size_usd": 310000000,
+    "check_size_usd": 40000000,
+    "key_metrics": {"ltv": 0.55, "irr_target": 0.13},
+    "sponsor": null,
+    "deadline": "2026-12-15"
+  }
+}

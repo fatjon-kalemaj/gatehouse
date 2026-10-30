@@ -1,0 +1,28 @@
+# Who may run what. The authoritative copy lives on the usage-logs branch and is
+# changed only through `gatehouse grant` / `gatehouse revoke`, which write an
+# audit event in the same commit. This file is the seed used by `gatehouse ledger init`.
+# All people below are synthetic.
+version: 1
+
+admins:
+  - ops.lead@example.com
+
+groups:
+  deal-team:
+    pipelines: [deal-intake]
+    daily_run_limit: 12
+  research:
+    pipelines: [deal-intake]
+    daily_run_limit: 6
+  ops-admin:
+    pipelines: ["*"]
+    daily_run_limit: 50
+
+users:
+  maya.patel@example.com: [deal-team]
+  daniel.okafor@example.com: [deal-team]
+  sofia.reyes@example.com: [deal-team]
+  liam.chen@example.com: [deal-team]
+  ava.goldberg@example.com: [research]
+  noah.kim@example.com: [research]
+  ops.lead@example.com: [ops-admin]

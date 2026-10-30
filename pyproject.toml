@@ -1,0 +1,25 @@
+[project]
+name = "gatehouse"
+version = "0.1.0"
+description = "One governed front door to a private repo of Claude agents: sequential pipelines, versioned skills, an append-only usage ledger and a dashboard."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+dependencies = ["pyyaml>=6"]
+
+[project.optional-dependencies]
+cloud = ["anthropic>=1.0"]
+dev = ["pytest>=8"]
+
+[project.scripts]
+gatehouse = "gatehouse.cli:main"
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["gatehouse*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

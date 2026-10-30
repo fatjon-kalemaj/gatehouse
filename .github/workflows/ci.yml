@@ -1,0 +1,68 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main, usage-logs]
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    if: github.ref != 'refs/heads/usage-logs'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: pip install -e '.[dev]'
+      - run: gatehouse registry   # fails if a pipeline step is not on the orchestrator roster
+      - run: pytest -q
+
+  # Shows the plan for agent and skill changes on every pull request; applies it only after merge.
+  # Needs repository variable ANT_VERSION (1.40.0 or later) and secret ANTHROPIC_API_KEY
+  # for a key scoped to the deal-desk workspace.
+  ant-apply-dry-run:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: {go-version: "1.25"}
+      - run: go install github.com/anthropics/anthropic-cli/cmd/ant@v${{ vars.ANT_VERSION }}
+      - run: ant apply --dry-run -v agents environments
+        env: {ANTHROPIC_API_KEY: "${{ secrets.ANTHROPIC_API_KEY }}"}
+
+  ant-apply:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # to commit claude-lock.json
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: {go-version: "1.25"}
+      - run: go install github.com/anthropics/anthropic-cli/cmd/ant@v${{ vars.ANT_VERSION }}
+      - run: ant apply --yes agents environments   # the merge is the approval
+        env: {ANTHROPIC_API_KEY: "${{ secrets.ANTHROPIC_API_KEY }}"}
+      - run: |
+          git config user.name gatehouse-bot
+          git config user.email gatehouse-bot@users.noreply.github.com
+          git add claude-lock.json
+          git diff --cached --quiet || git commit -m "ant apply: record agent versions [skip ci]"
+          git push
+
+  verify-ledger:
+    if: github.ref == 'refs/heads/usage-logs'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0, ref: main}
+      - run: git fetch origin usage-logs:usage-logs
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: pip install -e .
+      - run: gatehouse verify

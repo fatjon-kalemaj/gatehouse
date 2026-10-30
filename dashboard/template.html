@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gatehouse Monitor</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --surface-2: #f3f2ee;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --ring: rgba(11,11,11,0.10);
+  --accent: #2a78d6;
+  --accent-wash: rgba(42,120,214,0.10);
+  --good: #0ca30c;
+  --warning: #fab219;
+  --serious: #ec835a;
+  --critical: #d03b3b;
+  --blocked: #898781;
+  --good-text: #006300;
+  --bad-text: #b02a2a;
+  --series-1: #2a78d6;
+  --shadow: 0 1px 2px rgba(11,11,11,0.04), 0 4px 16px rgba(11,11,11,0.04);
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --surface-2: #232321; --ink: #f0efec; --ink-2: #c3c2b7;
+    --grid: #2c2c2a; --axis: #383835; --ring: rgba(255,255,255,0.10); --accent: #3987e5;
+    --accent-wash: rgba(57,135,229,0.16); --good-text: #0ca30c; --bad-text: #e66767; --series-1: #3987e5;
+    --shadow: none;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d; --surface: #1a1a19; --surface-2: #232321; --ink: #f0efec; --ink-2: #c3c2b7;
+  --grid: #2c2c2a; --axis: #383835; --ring: rgba(255,255,255,0.10); --accent: #3987e5;
+  --accent-wash: rgba(57,135,229,0.16); --good-text: #0ca30c; --bad-text: #e66767; --series-1: #3987e5;
+  --shadow: none;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--page); color: var(--ink);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 1240px; margin: 0 auto; padding: 28px 24px 64px; }
+header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.mark { width: 34px; height: 34px; border-radius: 9px; background: var(--ink); display: grid; place-items: center; }
+.mark svg { display: block; }
+h1 { font-size: 20px; margin: 0; letter-spacing: -0.01em; }
+.sub { color: var(--ink-2); font-size: 13px; margin-top: 2px; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 4px 10px; border-radius: 999px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--ring); color: var(--ink-2); white-space: nowrap; }
+.chip code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--ink); }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; }
+.filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 4px 0 20px; }
+.seg { display: inline-flex; background: var(--surface); border-radius: 10px; box-shadow: inset 0 0 0 1px var(--ring); padding: 3px; }
+.seg button { border: 0; background: none; color: var(--ink-2); font: inherit; font-size: 13px; padding: 5px 12px; border-radius: 7px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+select { font: inherit; font-size: 13px; color: var(--ink); background: var(--surface); border: 0; box-shadow: inset 0 0 0 1px var(--ring); border-radius: 10px; padding: 7px 10px; max-width: 100%; }
+.theme-btn { margin-left: auto; }
+.grid { display: grid; gap: 16px; grid-template-columns: repeat(12, minmax(0, 1fr)); }
+.card { background: var(--surface); border-radius: 14px; box-shadow: inset 0 0 0 1px var(--ring), var(--shadow); padding: 18px 18px 16px; min-width: 0; }
+.card h2 { font-size: 14px; margin: 0; font-weight: 600; }
+.card .hint { color: var(--muted); font-size: 12px; margin: 2px 0 12px; }
+.span-12 { grid-column: span 12; } .span-8 { grid-column: span 8; } .span-7 { grid-column: span 7; }
+.span-6 { grid-column: span 6; } .span-5 { grid-column: span 5; } .span-4 { grid-column: span 4; }
+@media (max-width: 960px) { .span-8, .span-7, .span-6, .span-5, .span-4 { grid-column: span 12; } }
+.kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px; margin-bottom: 16px; }
+@media (max-width: 960px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .wrap { padding: 20px 16px 48px; } }
+.kpi { padding: 14px 16px; }
+.kpi .label { color: var(--ink-2); font-size: 12px; }
+.kpi .value { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; margin-top: 4px; }
+.kpi .foot { color: var(--muted); font-size: 12px; margin-top: 2px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--ink-2); margin-bottom: 8px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+svg.chart { width: 100%; height: auto; display: block; overflow: visible; }
+svg.chart text { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.tbl-wrap { overflow-x: auto; margin: 0 -4px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; font-weight: 500; color: var(--muted); font-size: 12px; padding: 6px 8px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+td { padding: 8px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+td code, .mono { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
+.muted { color: var(--muted); }
+.pill { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; padding: 1px 8px 1px 6px; border-radius: 999px; background: var(--surface-2); white-space: nowrap; }
+.inline-bar { position: relative; height: 6px; border-radius: 3px; background: var(--surface-2); min-width: 60px; margin-top: 6px; }
+.inline-bar b { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: var(--series-1); }
+tr.run { cursor: pointer; }
+tr.run:hover td { background: var(--accent-wash); }
+tr.detail td { background: var(--surface-2); padding: 10px 12px 14px; }
+.steps { display: grid; gap: 6px; }
+.step { display: grid; grid-template-columns: 22px 120px 110px 1fr auto; gap: 10px; align-items: baseline; font-size: 12px; }
+@media (max-width: 720px) { .step { grid-template-columns: 22px 1fr; } .step > :nth-child(n+3) { grid-column: 2; } }
+.vbars { display: grid; gap: 10px; }
+.vbar { display: grid; grid-template-columns: minmax(120px, 1fr) 3fr 36px; gap: 10px; align-items: center; font-size: 13px; }
+.vbar .track { height: 10px; border-radius: 4px; background: var(--surface-2); position: relative; }
+.vbar .track b { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; }
+.gov { display: grid; gap: 12px; font-size: 13px; }
+.gov dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0; }
+.gov dt { color: var(--muted); }
+.gov dd { margin: 0; }
+.tip { position: fixed; pointer-events: none; z-index: 10; background: var(--ink); color: var(--surface); font-size: 12px; padding: 8px 10px; border-radius: 8px; max-width: 280px; opacity: 0; transition: opacity .08s; box-shadow: 0 6px 24px rgba(0,0,0,.18); }
+.tip b { font-weight: 600; }
+.tip .row { display: flex; justify-content: space-between; gap: 16px; font-variant-numeric: tabular-nums; }
+.empty { color: var(--muted); padding: 24px 0; text-align: center; }
+footer { color: var(--muted); font-size: 12px; margin-top: 28px; display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="mark" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 20 20"><path d="M3 18V8l7-5 7 5v10h-4.5v-5.5h-5V18z" fill="var(--surface)"/></svg>
+      </div>
+      <div>
+        <h1>Gatehouse monitor</h1>
+        <div class="sub">Runs, spend and governance from the <code class="mono">usage-logs</code> branch</div>
+      </div>
+    </div>
+    <div class="meta" id="meta"></div>
+  </header>
+
+  <div class="filters" role="group" aria-label="Filters">
+    <div class="seg" id="range" role="group" aria-label="Time range">
+      <button data-days="7">7 days</button><button data-days="14">14 days</button><button data-days="30" aria-pressed="true">30 days</button><button data-days="0">All</button>
+    </div>
+    <select id="f-pipeline" aria-label="Pipeline"></select>
+    <select id="f-user" aria-label="User"></select>
+    <div class="seg theme-btn" id="theme" role="group" aria-label="Theme">
+      <button data-theme="auto" aria-pressed="true">Auto</button><button data-theme="light">Light</button><button data-theme="dark">Dark</button>
+    </div>
+  </div>
+
+  <section class="kpis" id="kpis"></section>
+
+  <section class="grid">
+    <div class="card span-8">
+      <h2>Runs per day</h2>
+      <div class="hint">Stacked by outcome. Denied and held runs never reached an agent.</div>
+      <div class="legend" id="runs-legend"></div>
+      <div id="runs-chart"></div>
+    </div>
+    <div class="card span-4">
+      <h2>Spend per day</h2>
+      <div class="hint">List cost in USD, all agents and the orchestrator.</div>
+      <div id="cost-chart"></div>
+    </div>
+
+    <div class="card span-12">
+      <h2>Agents</h2>
+      <div class="hint">Per step, across runs that reached the agent. Versions are the commits of each agent's skill.</div>
+      <div class="tbl-wrap"><table id="agents"></table></div>
+    </div>
+
+    <div class="card span-7">
+      <h2>People</h2>
+      <div class="hint">Who ran what. Identities come from SSO at the gateway.</div>
+      <div class="tbl-wrap"><table id="users"></table></div>
+    </div>
+    <div class="card span-5">
+      <h2>Policy violations</h2>
+      <div class="hint">From the audit trail, by rule.</div>
+      <div class="vbars" id="violations"></div>
+    </div>
+
+    <div class="card span-7">
+      <h2>Recent runs</h2>
+      <div class="hint">Select a run to see each step, its skill version, tokens and cost.</div>
+      <div class="tbl-wrap"><table id="recent"></table></div>
+    </div>
+    <div class="card span-5">
+      <h2>Audit trail</h2>
+      <div class="hint">Append-only and hash-chained. Latest first.</div>
+      <div class="tbl-wrap"><table id="audit"></table></div>
+    </div>
+
+    <div class="card span-12">
+      <h2>Governance in force</h2>
+      <div class="hint">Read from <code class="mono">governance/</code> on the same branch at build time.</div>
+      <div class="grid" id="gov"></div>
+    </div>
+  </section>
+
+  <footer id="foot"></footer>
+</div>
+<div class="tip" id="tip" role="tooltip"></div>
+
+<script>
+const DATA = /*__GATEHOUSE_DATA__*/null;
+
+const OUTCOMES = [
+  { key: "succeeded",        label: "Succeeded",        color: "var(--good)" },
+  { key: "needs_review",     label: "Needs review",     color: "var(--warning)" },
+  { key: "failed",           label: "Failed",           color: "var(--critical)" },
+  { key: "budget_exceeded",  label: "Budget reached",   color: "var(--serious)" },
+  { key: "pending_approval", label: "Held for approval", color: "var(--accent)" },
+  { key: "denied",           label: "Denied by policy", color: "var(--blocked)" },
+];
+const OUT = Object.fromEntries(OUTCOMES.map(o => [o.key, o]));
+const ICON = { succeeded: "✓", needs_review: "!", failed: "✕", budget_exceeded: "$", pending_approval: "…", denied: "⊘", ok: "✓" };
+
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const usd = (v, d = 2) => "$" + (v || 0).toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d });
+const num = (v) => (v || 0).toLocaleString();
+const pct = (v) => isFinite(v) ? (v * 100).toFixed(v >= 0.995 || v === 0 ? 0 : 1) + "%" : "–";
+const secs = (ms) => ms >= 60000 ? (ms / 60000).toFixed(1) + " min" : (ms / 1000).toFixed(1) + " s";
+const short = (sha) => sha ? String(sha).slice(0, 7) : "–";
+const day = (iso) => iso.slice(0, 10);
+const fmtDay = (d) => new Date(d + "T12:00:00Z").toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" });
+const fmtTime = (iso) => new Date(iso).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+const quant = (arr, q) => { if (!arr.length) return 0; const s = [...arr].sort((a, b) => a - b); const i = (s.length - 1) * q; const lo = Math.floor(i), hi = Math.ceil(i); return s[lo] + (s[hi] - s[lo]) * (i - lo); };
+const pill = (status) => { const o = OUT[status] || { label: status, color: "var(--muted)" }; return `<span class="pill"><span class="dot" style="background:${o.color}"></span>${esc(o.label || status)}</span>`; };
+const stepPill = (status) => { const c = { ok: "var(--good)", needs_review: "var(--warning)", failed: "var(--critical)" }[status] || "var(--muted)"; const l = { ok: "OK", needs_review: "Needs review", failed: "Failed" }[status] || status; return `<span class="pill"><span class="dot" style="background:${c}"></span>${l}</span>`; };
+
+const state = { days: 30, pipeline: "", user: "" };
+
+/* ---------- tooltip ---------- */
+const tip = $("#tip");
+function showTip(e, html) { tip.innerHTML = html; tip.style.opacity = 1; moveTip(e); }
+function moveTip(e) {
+  const r = tip.getBoundingClientRect();
+  let x = e.clientX + 14, y = e.clientY + 14;
+  if (x + r.width > innerWidth - 8) x = e.clientX - r.width - 14;
+  if (y + r.height > innerHeight - 8) y = e.clientY - r.height - 14;
+  tip.style.left = x + "px"; tip.style.top = y + "px";
+}
+function hideTip() { tip.style.opacity = 0; }
+
+/* ---------- data ---------- */
+function filtered() {
+  const runs = DATA.runs;
+  const last = runs.length ? runs.reduce((m, r) => r.started_at > m ? r.started_at : m, runs[0].started_at) : new Date().toISOString();
+  const end = new Date(day(last) + "T23:59:59Z");
+  const start = state.days ? new Date(end.getTime() - (state.days - 1) * 86400000) : null;
+  const startDay = start ? start.toISOString().slice(0, 10) : (runs.length ? runs.reduce((m, r) => r.started_at < m ? r.started_at : m, last).slice(0, 10) : day(last));
+  const keep = (r) => (!start || day(r.started_at) >= startDay) && (!state.pipeline || r.pipeline === state.pipeline) && (!state.user || r.user === state.user);
+  const days = [];
+  for (let d = new Date(startDay + "T12:00:00Z"); d <= end; d = new Date(d.getTime() + 86400000)) days.push(d.toISOString().slice(0, 10));
+  const auditKeep = (a) => (!start || day(a.at) >= startDay) && (!state.user || a.actor === state.user);
+  return { runs: runs.filter(keep), days, audit: DATA.audit.filter(auditKeep) };
+}
+
+/* ---------- header ---------- */
+function renderMeta() {
+  const v = DATA.verify;
+  $("#meta").innerHTML = `
+    <span class="chip"><span class="dot" style="background:${v.ok ? "var(--good)" : "var(--critical)"}"></span>${v.ok ? "Ledger verified" : "Ledger check failed"}</span>
+    <span class="chip">branch <code>${esc(DATA.branch)}</code> @ <code>${short(DATA.tip)}</code></span>
+    <span class="chip">${num(DATA.runs.length)} runs · ${num(DATA.audit.length)} audit events</span>`;
+  $("#foot").innerHTML = `<span>Built ${esc(fmtTime(DATA.generated_at))}</span><span>${num(v.commits)} commits checked: hash chains intact and nothing rewritten${v.ok ? "" : " — FAILED"}</span><span>Dry-run records are marked simulated; token and cost figures for them are estimates.</span>`;
+}
+
+function renderFilters() {
+  const pipes = [...new Set(DATA.runs.map(r => r.pipeline))].sort();
+  const users = [...new Set(DATA.runs.map(r => r.user))].sort();
+  $("#f-pipeline").innerHTML = `<option value="">All pipelines</option>` + pipes.map(p => `<option>${esc(p)}</option>`).join("");
+  $("#f-user").innerHTML = `<option value="">Everyone</option>` + users.map(u => `<option>${esc(u)}</option>`).join("");
+  $("#range").addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    state.days = +b.dataset.days;
+    [...$("#range").children].forEach(x => x.setAttribute("aria-pressed", x === b));
+    render();
+  });
+  $("#f-pipeline").onchange = (e) => { state.pipeline = e.target.value; render(); };
+  $("#f-user").onchange = (e) => { state.user = e.target.value; render(); };
+  let saved = "auto"; try { saved = localStorage.getItem("gh-theme") || "auto"; } catch (_) {}
+  const applyTheme = (t) => {
+    if (t === "auto") document.documentElement.removeAttribute("data-theme"); else document.documentElement.setAttribute("data-theme", t);
+    [...$("#theme").children].forEach(x => x.setAttribute("aria-pressed", x.dataset.theme === t));
+    try { localStorage.setItem("gh-theme", t); } catch (_) {}
+  };
+  applyTheme(saved);
+  $("#theme").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) applyTheme(b.dataset.theme); });
+}
+
+/* ---------- KPIs ---------- */
+function renderKpis({ runs }) {
+  const executed = runs.filter(r => r.steps && r.steps.length);
+  const ok = runs.filter(r => r.status === "succeeded").length;
+  const spend = runs.reduce((s, r) => s + (r.cost_usd || 0), 0);
+  const blocked = runs.filter(r => r.status === "denied" || r.status === "pending_approval").length;
+  const viol = runs.reduce((s, r) => s + ((r.policy && r.policy.violations) || []).length, 0);
+  const p50 = quant(executed.map(r => r.duration_ms), 0.5);
+  const tiles = [
+    ["Runs", num(runs.length), `${num(executed.length)} reached the agents`],
+    ["Success rate", pct(executed.length ? ok / executed.length : NaN), "of runs that executed"],
+    ["Spend", usd(spend), `${usd(executed.length ? spend / executed.length : 0)} per executed run`],
+    ["Median duration", executed.length ? secs(p50) : "–", `p95 ${executed.length ? secs(quant(executed.map(r => r.duration_ms), 0.95)) : "–"}`],
+    ["Blocked at the gate", num(blocked), "denied or held for approval"],
+    ["Policy violations", num(viol), "input, access, budget, step issues"],
+  ];
+  $("#kpis").innerHTML = tiles.map(([l, v, f]) => `<div class="card kpi"><div class="label">${l}</div><div class="value">${v}</div><div class="foot">${f}</div></div>`).join("");
+}
+
+/* ---------- runs per day (stacked bars) ---------- */
+function renderRunsChart({ runs, days }) {
+  const present = OUTCOMES.filter(o => runs.some(r => r.status === o.key));
+  $("#runs-legend").innerHTML = present.map(o => `<span><i style="background:${o.color}"></i>${o.label}</span>`).join("");
+  const byDay = Object.fromEntries(days.map(d => [d, Object.fromEntries(OUTCOMES.map(o => [o.key, 0]))]));
+  runs.forEach(r => { const d = day(r.started_at); if (byDay[d]) byDay[d][r.status] = (byDay[d][r.status] || 0) + 1; });
+  const W = 760, H = 240, L = 30, R = 8, T = 8, B = 26;
+  const maxV = Math.max(1, ...days.map(d => OUTCOMES.reduce((s, o) => s + byDay[d][o.key], 0)));
+  const step = maxV <= 5 ? 1 : maxV <= 12 ? 2 : maxV <= 25 ? 5 : 10;
+  const top = Math.ceil(maxV / step) * step;
+  const y = (v) => T + (H - T - B) * (1 - v / top);
+  const bw = (W - L - R) / days.length;
+  const barW = Math.max(3, Math.min(22, bw - 4));
+  let g = "";
+  for (let v = 0; v <= top; v += step) g += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)" stroke-width="1"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${v}</text>`;
+  g += `<line x1="${L}" x2="${W - R}" y1="${y(0)}" y2="${y(0)}" stroke="var(--axis)"/>`;
+  const labelEvery = Math.ceil(days.length / 8);
+  days.forEach((d, i) => {
+    const x = L + i * bw + (bw - barW) / 2;
+    let acc = 0;
+    const segs = OUTCOMES.filter(o => byDay[d][o.key] > 0);
+    segs.forEach((o, si) => {
+      const v = byDay[d][o.key];
+      const y0 = y(acc), y1 = y(acc + v);
+      const h = Math.max(1, y0 - y1 - (si < segs.length - 1 ? 2 : 0));
+      const isTop = si === segs.length - 1;
+      const r = isTop ? Math.min(4, barW / 2, h) : 0;
+      g += isTop
+        ? `<path d="M${x},${y1 + h} V${y1 + r} Q${x},${y1} ${x + r},${y1} H${x + barW - r} Q${x + barW},${y1} ${x + barW},${y1 + r} V${y1 + h} Z" fill="${o.color}"/>`
+        : `<rect x="${x}" y="${y0 - h}" width="${barW}" height="${h}" fill="${o.color}"/>`;
+      acc += v;
+    });
+    if (i % labelEvery === 0) g += `<text x="${L + i * bw + bw / 2}" y="${H - 8}" text-anchor="middle">${fmtDay(d)}</text>`;
+    g += `<rect class="hit" data-day="${d}" x="${L + i * bw}" y="${T}" width="${bw}" height="${H - T - B}" fill="transparent"/>`;
+  });
+  $("#runs-chart").innerHTML = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Runs per day by outcome">${g}</svg>`;
+  $("#runs-chart").querySelectorAll(".hit").forEach(el => {
+    el.addEventListener("mousemove", (e) => {
+      const d = el.dataset.day, row = byDay[d], tot = OUTCOMES.reduce((s, o) => s + row[o.key], 0);
+      showTip(e, `<b>${fmtDay(d)}</b> · ${tot} run${tot === 1 ? "" : "s"}` + OUTCOMES.filter(o => row[o.key]).map(o => `<div class="row"><span>${o.label}</span><span>${row[o.key]}</span></div>`).join(""));
+      el.setAttribute("fill", "var(--accent-wash)");
+    });
+    el.addEventListener("mouseleave", () => { hideTip(); el.setAttribute("fill", "transparent"); });
+  });
+}
+
+/* ---------- spend per day (line + area) ---------- */
+function renderCostChart({ runs, days }) {
+  const by = Object.fromEntries(days.map(d => [d, { cost: 0, n: 0 }]));
+  runs.forEach(r => { const d = day(r.started_at); if (by[d]) { by[d].cost += r.cost_usd || 0; by[d].n += 1; } });
+  const vals = days.map(d => by[d].cost);
+  const W = 380, H = 240, L = 40, R = 10, T = 10, B = 26;
+  const maxV = Math.max(0.5, ...vals);
+  const step = maxV <= 1 ? 0.25 : maxV <= 2.5 ? 0.5 : maxV <= 6 ? 1 : maxV <= 12 ? 2 : 5;
+  const top = Math.ceil(maxV / step) * step;
+  const x = (i) => L + (days.length === 1 ? (W - L - R) / 2 : i * (W - L - R) / (days.length - 1));
+  const y = (v) => T + (H - T - B) * (1 - v / top);
+  let g = "";
+  for (let v = 0; v <= top + 1e-9; v += step) g += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end">$${v % 1 ? v.toFixed(2) : v}</text>`;
+  const pts = vals.map((v, i) => `${x(i)},${y(v)}`);
+  g += `<path d="M${x(0)},${y(0)} L${pts.join(" L")} L${x(vals.length - 1)},${y(0)} Z" fill="var(--series-1)" opacity="0.12"/>`;
+  g += `<path d="M${pts.join(" L")}" fill="none" stroke="var(--series-1)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  g += `<line x1="${L}" x2="${W - R}" y1="${y(0)}" y2="${y(0)}" stroke="var(--axis)"/>`;
+  const labelEvery = Math.ceil(days.length / 4);
+  days.forEach((d, i) => { if (i % labelEvery === 0) g += `<text x="${x(i)}" y="${H - 8}" text-anchor="middle">${fmtDay(d)}</text>`; });
+  g += `<line id="cx" x1="0" x2="0" y1="${T}" y2="${y(0)}" stroke="var(--axis)" stroke-dasharray="3 3" opacity="0"/><circle id="cd" r="4.5" fill="var(--series-1)" stroke="var(--surface)" stroke-width="2" opacity="0"/>`;
+  g += `<rect id="chit" x="${L}" y="${T}" width="${W - L - R}" height="${H - T - B}" fill="transparent"/>`;
+  $("#cost-chart").innerHTML = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Spend per day">${g}</svg>`;
+  const svg = $("#cost-chart svg"), hit = svg.querySelector("#chit"), cx = svg.querySelector("#cx"), cd = svg.querySelector("#cd");
+  hit.addEventListener("mousemove", (e) => {
+    const p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY;
+    const loc = p.matrixTransform(svg.getScreenCTM().inverse());
+    const i = Math.max(0, Math.min(days.length - 1, Math.round((loc.x - L) / ((W - L - R) / Math.max(1, days.length - 1)))));
+    cx.setAttribute("x1", x(i)); cx.setAttribute("x2", x(i)); cx.setAttribute("opacity", 1);
+    cd.setAttribute("cx", x(i)); cd.setAttribute("cy", y(vals[i])); cd.setAttribute("opacity", 1);
+    const b = by[days[i]];
+    showTip(e, `<b>${fmtDay(days[i])}</b><div class="row"><span>Spend</span><span>${usd(b.cost)}</span></div><div class="row"><span>Runs</span><span>${b.n}</span></div>`);
+  });
+  hit.addEventListener("mouseleave", () => { hideTip(); cx.setAttribute("opacity", 0); cd.setAttribute("opacity", 0); });
+}
+
+/* ---------- agents ---------- */
+function renderAgents({ runs }) {
+  const by = {};
+  runs.forEach(r => (r.steps || []).forEach(s => {
+    const a = by[s.agent] ||= { agent: s.agent, model: s.model, effort: s.effort, index: s.index, n: 0, ok: 0, review: 0, failed: 0, dur: [], out: 0, cost: 0, versions: {} };
+    a.n++; a[s.status === "ok" ? "ok" : s.status === "needs_review" ? "review" : "failed"]++;
+    a.dur.push(s.duration_ms); a.out += (s.tokens && s.tokens.output) || 0; a.cost += s.cost_usd || 0;
+    const v = short(s.skill_commit); a.versions[v] = (a.versions[v] || 0) + 1;
+  }));
+  const rows = Object.values(by).sort((a, b) => a.index - b.index);
+  if (!rows.length) { $("#agents").innerHTML = `<tr><td class="empty">No runs reached an agent in this range.</td></tr>`; return; }
+  const maxCost = Math.max(...rows.map(r => r.cost));
+  $("#agents").innerHTML = `<thead><tr><th>Step</th><th>Agent</th><th>Model</th><th class="num">Runs</th><th class="num">Failure rate</th><th class="num">Needs review</th><th class="num">p50 time</th><th class="num">p95 time</th><th class="num">Avg output tokens</th><th class="num">Avg cost</th><th>Total cost</th><th>Skill versions</th></tr></thead><tbody>` +
+    rows.map(a => `<tr>
+      <td class="num">${a.index}</td>
+      <td><b>${esc(a.agent)}</b></td>
+      <td><span class="mono">${esc(a.model)}</span> <span class="muted">· ${esc(a.effort)}</span></td>
+      <td class="num">${num(a.n)}</td>
+      <td class="num" style="color:${a.failed / a.n > 0.05 ? "var(--bad-text)" : "inherit"}">${pct(a.failed / a.n)}</td>
+      <td class="num">${pct(a.review / a.n)}</td>
+      <td class="num">${secs(quant(a.dur, 0.5))}</td>
+      <td class="num">${secs(quant(a.dur, 0.95))}</td>
+      <td class="num">${num(Math.round(a.out / a.n))}</td>
+      <td class="num">${usd(a.cost / a.n, 3)}</td>
+      <td style="min-width:120px"><span class="num">${usd(a.cost)}</span><div class="inline-bar"><b style="width:${(a.cost / maxCost * 100).toFixed(1)}%"></b></div></td>
+      <td>${Object.entries(a.versions).map(([v, c]) => `<span class="pill mono" title="${c} runs">${v} <span class="muted">×${c}</span></span>`).join(" ")}</td>
+    </tr>`).join("") + `</tbody>`;
+}
+
+/* ---------- people ---------- */
+function renderUsers({ runs }) {
+  const by = {};
+  runs.forEach(r => {
+    const u = by[r.user] ||= { user: r.user, groups: r.groups || [], n: 0, s: {}, cost: 0, last: r.started_at };
+    u.n++; u.s[r.status] = (u.s[r.status] || 0) + 1; u.cost += r.cost_usd || 0;
+    if (r.started_at > u.last) u.last = r.started_at;
+    if ((r.groups || []).length) u.groups = r.groups;
+  });
+  const rows = Object.values(by).sort((a, b) => b.n - a.n);
+  if (!rows.length) { $("#users").innerHTML = `<tr><td class="empty">No runs in this range.</td></tr>`; return; }
+  const maxN = Math.max(...rows.map(r => r.n));
+  $("#users").innerHTML = `<thead><tr><th>User</th><th>Groups</th><th>Runs by outcome</th><th class="num">Runs</th><th class="num">Spend</th><th class="num">Last run</th></tr></thead><tbody>` +
+    rows.map(u => {
+      const bar = OUTCOMES.filter(o => u.s[o.key]).map(o => `<b title="${o.label}: ${u.s[o.key]}" style="display:inline-block;height:8px;width:${(u.s[o.key] / maxN * 100).toFixed(2)}%;background:${o.color};margin-right:2px;border-radius:2px"></b>`).join("");
+      return `<tr>
+        <td>${esc(u.user)}</td>
+        <td>${u.groups.length ? u.groups.map(g => `<span class="pill">${esc(g)}</span>`).join(" ") : `<span class="pill"><span class="dot" style="background:var(--blocked)"></span>not allowlisted</span>`}</td>
+        <td style="min-width:140px;white-space:nowrap">${bar}</td>
+        <td class="num">${num(u.n)}</td>
+        <td class="num">${usd(u.cost)}</td>
+        <td class="num muted">${esc(fmtTime(u.last))}</td>
+      </tr>`;
+    }).join("") + `</tbody>`;
+}
+
+/* ---------- violations ---------- */
+const RULE_LABEL = {
+  "access.not_allowlisted": "Not on the allowlist", "access.pipeline_not_granted": "Pipeline not granted", "quota.daily_runs": "Daily run limit",
+  "pii.ssn": "Personal identifier in input", "pii.account_number": "Account number in input", "mnpi.marker": "MNPI marker in input",
+  "restricted.list": "Restricted-list name", "approval.required": "Approval required", "budget.reached": "Run budget reached",
+  "pii.present": "PII in step output", "claim.unsupported": "Unsupported claim",
+};
+const SEV = { high: "var(--critical)", medium: "var(--serious)", low: "var(--warning)" };
+function renderViolations({ audit }) {
+  const by = {};
+  audit.filter(a => a.type === "policy.violation").forEach(a => {
+    const k = a.detail.code; (by[k] ||= { code: k, n: 0, sev: a.detail.severity }).n++;
+  });
+  const rows = Object.values(by).sort((a, b) => b.n - a.n);
+  if (!rows.length) { $("#violations").innerHTML = `<div class="empty">No violations in this range.</div>`; return; }
+  const max = Math.max(...rows.map(r => r.n));
+  $("#violations").innerHTML = rows.map(r => `<div class="vbar" title="${esc(r.code)}">
+    <div><div>${esc(RULE_LABEL[r.code] || r.code)}</div><div class="muted mono" style="font-size:11px">${esc(r.code)} · ${esc(r.sev)}</div></div>
+    <div class="track"><b style="width:${(r.n / max * 100).toFixed(1)}%;background:${SEV[r.sev] || "var(--muted)"}"></b></div>
+    <div class="num" style="text-align:right">${r.n}</div></div>`).join("") +
+    `<div class="legend" style="margin:6px 0 0"><span><i style="background:var(--critical)"></i>High severity</span><span><i style="background:var(--serious)"></i>Medium severity</span></div>`;
+}
+
+/* ---------- recent runs ---------- */
+function renderRecent({ runs }) {
+  const rows = [...runs].sort((a, b) => b.started_at.localeCompare(a.started_at)).slice(0, 25);
+  if (!rows.length) { $("#recent").innerHTML = `<tr><td class="empty">No runs in this range.</td></tr>`; return; }
+  $("#recent").innerHTML = `<thead><tr><th>When</th><th>User</th><th>Input</th><th>Outcome</th><th class="num">Time</th><th class="num">Cost</th></tr></thead><tbody>` +
+    rows.map(r => `<tr class="run" data-id="${esc(r.run_id)}" tabindex="0" aria-expanded="false">
+      <td class="muted" style="white-space:nowrap">${esc(fmtTime(r.started_at))}</td>
+      <td>${esc(r.user.split("@")[0])}</td>
+      <td>${esc((r.input && r.input.summary || "").split(",")[0])}</td>
+      <td>${pill(r.status)}</td>
+      <td class="num">${r.duration_ms ? secs(r.duration_ms) : "–"}</td>
+      <td class="num">${usd(r.cost_usd)}</td></tr>`).join("") + `</tbody>`;
+  const toggle = (tr) => {
+    const next = tr.nextElementSibling;
+    if (next && next.classList.contains("detail")) { next.remove(); tr.setAttribute("aria-expanded", "false"); return; }
+    const r = runs.find(x => x.run_id === tr.dataset.id);
+    const steps = (r.steps || []).map(s => `<div class="step"><span class="muted">${s.index}.</span><b>${esc(s.agent)}</b><span>${stepPill(s.status)}</span><span>${esc(s.summary)}</span><span class="muted mono" style="white-space:nowrap">${short(s.skill_commit)} · ${num((s.tokens || {}).output)} out · ${usd(s.cost_usd, 3)}</span></div>`).join("");
+    const errs = (r.errors || []).map(e => `<div class="muted">step ${e.step}: <span class="mono">${esc(e.code)}</span> — ${esc(e.message)}</div>`).join("");
+    const d = document.createElement("tr"); d.className = "detail";
+    d.innerHTML = `<td colspan="6"><div class="steps">${steps || `<div class="muted">No agent ran: the gateway stopped this request.</div>`}${errs}
+      <div class="muted mono" style="margin-top:6px;font-size:11px">${esc(r.run_id)} · repo ${short(r.repo_commit)} · input ${esc((r.input || {}).sha256 || "").slice(0, 19)}… · ${r.simulated ? "dry run (simulated usage)" : "session " + esc(r.session_id || "")} · seq ${r.seq}</div></div></td>`;
+    tr.after(d); tr.setAttribute("aria-expanded", "true");
+  };
+  $("#recent").querySelectorAll("tr.run").forEach(tr => {
+    tr.addEventListener("click", () => toggle(tr));
+    tr.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(tr); } });
+  });
+}
+
+/* ---------- audit ---------- */
+const AUDIT_LABEL = { "policy.violation": "Policy violation", "run.denied": "Run denied", "run.held_for_approval": "Held for approval", "approval.used": "Approval used", "governance.changed": "Allowlist changed", "ledger.initialized": "Ledger initialized" };
+function renderAudit({ audit }) {
+  const rows = [...audit].sort((a, b) => b.seq - a.seq).slice(0, 14);
+  if (!rows.length) { $("#audit").innerHTML = `<tr><td class="empty">No audit events in this range.</td></tr>`; return; }
+  const detail = (a) => a.type === "policy.violation" ? `<span class="mono">${esc(a.detail.code)}</span>`
+    : a.type === "governance.changed" ? `${esc(a.detail.user)}: ${esc((a.detail.before || []).join(", ") || "none")} → ${esc((a.detail.after || []).join(", ") || "none")}`
+    : a.type === "approval.used" ? `<span class="mono">${esc(a.detail.ticket)}</span>` : esc(a.detail && a.detail.pipeline || "");
+  $("#audit").innerHTML = `<thead><tr><th class="num">#</th><th>When</th><th>Event</th><th>Actor</th><th>Detail</th></tr></thead><tbody>` +
+    rows.map(a => `<tr><td class="num muted">${a.seq}</td><td class="muted" style="white-space:nowrap">${esc(fmtTime(a.at))}</td><td>${esc(AUDIT_LABEL[a.type] || a.type)}</td><td>${esc((a.actor || "").split("@")[0])}</td><td>${detail(a)}</td></tr>`).join("") + `</tbody>`;
+}
+
+/* ---------- governance ---------- */
+function renderGov() {
+  const al = DATA.allowlist || {}, pol = DATA.policy || {};
+  const groups = Object.entries(al.groups || {});
+  const users = Object.entries(al.users || {});
+  const memberCount = (g) => users.filter(([, gs]) => gs.includes(g)).length;
+  $("#gov").innerHTML = `
+    <div class="span-4 gov"><b>Allowlist</b><div class="tbl-wrap"><table><thead><tr><th>Group</th><th>Pipelines</th><th class="num">People</th><th class="num">Daily limit</th></tr></thead><tbody>
+      ${groups.map(([g, c]) => `<tr><td>${esc(g)}</td><td>${(c.pipelines || []).map(p => `<span class="pill mono">${esc(p)}</span>`).join(" ")}</td><td class="num">${memberCount(g)}</td><td class="num">${c.daily_run_limit ?? "–"}</td></tr>`).join("")}
+    </tbody></table></div><div class="muted">Admins: ${(al.admins || []).map(esc).join(", ")}</div></div>
+    <div class="span-4 gov"><b>Policy</b><dl>
+      <dt>Run budget</dt><dd>${usd((pol.budgets || {}).default_max_cost_usd)} per run, enforced as the session budget</dd>
+      ${(pol.approvals || []).map(a => `<dt>Approval</dt><dd>${esc(a.pipeline)} over ${usd((a.when || {}).deal_size_usd_gt / 1e6, 0)}M needs a ticket from ${esc((a.approver_groups || []).join(", "))}</dd>`).join("")}
+      <dt>Input screening</dt><dd>${(pol.input_screening || []).map(r => `<span class="pill mono">${esc(r.code)}</span>`).join(" ")}</dd>
+      <dt>Logging</dt><dd>inputs and outputs as digest + summary only; ${esc((pol.logging || {}).retention_years)} year retention</dd>
+    </dl></div>
+    <div class="span-4 gov"><b>Change control</b><dl>
+      <dt>main</dt><dd>${esc(((pol.change_control || {}).main || {}).required_reviews)} reviews, CODEOWNERS, checks: ${esc((((pol.change_control || {}).main || {}).required_checks || []).join(", "))}</dd>
+      <dt>usage-logs</dt><dd>writers: ${esc((((pol.change_control || {})["usage-logs"] || {}).writers || []).join(", "))}; no force push, no deletion</dd>
+      <dt>Ledger</dt><dd>${DATA.verify.ok ? "verified" : "FAILED"} across ${num(DATA.verify.commits)} commits at <span class="mono">${short(DATA.tip)}</span></dd>
+    </dl></div>`;
+}
+
+function render() {
+  const f = filtered();
+  renderKpis(f); renderRunsChart(f); renderCostChart(f); renderAgents(f); renderUsers(f); renderViolations(f); renderRecent(f); renderAudit(f);
+}
+
+if (!DATA) {
+  document.querySelector(".wrap").innerHTML = `<div class="empty">No data. Build this page with <code>gatehouse dashboard</code>.</div>`;
+} else {
+  renderMeta(); renderFilters(); renderGov(); render();
+}
+</script>
+</body>
+</html>

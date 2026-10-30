@@ -1,0 +1,10 @@
+# Cloud sandbox for every deal-desk session. Limited networking: no package
+# managers and no outbound hosts. Add approved research hosts to allowed_hosts
+# only when deal-research has its web tools turned on.
+name: deal-desk
+config:
+  type: cloud
+  networking:
+    type: limited
+    allow_package_managers: false
+    allowed_hosts: []

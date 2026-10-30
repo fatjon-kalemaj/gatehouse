@@ -1,0 +1,16 @@
+{
+  "deal_name": "Project Fir",
+  "source": "forwarded email thread (synthetic, shows input screening)",
+  "teaser": "Family office selling a stake in a regional HVAC business, EV $90M. Owner contact: J. Doe, SSN 123-45-6789 for KYC (do not send to agents).",
+  "fields": {
+    "asset_class": "private_equity",
+    "strategy": "growth",
+    "sector": "industrial services",
+    "geography": "US Northeast",
+    "deal_size_usd": 90000000,
+    "check_size_usd": 12000000,
+    "key_metrics": {"ebitda_usd": 9000000},
+    "sponsor": null,
+    "deadline": "2026-12-01"
+  }
+}

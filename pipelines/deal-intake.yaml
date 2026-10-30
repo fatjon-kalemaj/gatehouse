@@ -1,0 +1,21 @@
+# The deal-intake pipeline. The orchestrator skill reads this file inside the
+# session; the gateway reads it to check policy and to price the run.
+name: deal-intake
+description: Inbound deal to screening memo, checked by QA.
+steps:
+  - agent: deal-intake
+    produces: intake
+    consumes: [input]
+  - agent: deal-research
+    produces: research
+    consumes: [intake]
+  - agent: deal-memo
+    produces: memo
+    consumes: [intake, research]
+  - agent: deal-qa
+    produces: qa
+    consumes: [intake, research, memo]
+    gate: true
+limits:
+  max_cost_usd: 6.00
+  max_duration_s: 900

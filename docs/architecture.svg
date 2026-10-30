@@ -1,0 +1,186 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" role="img" aria-labelledby="t d">
+  <title id="t">Gatehouse architecture</title>
+  <desc id="d">Employees reach only the gateway. The gateway checks the allowlist and policy on the usage-logs branch, starts a Claude Managed Agents session of the orchestrator, which runs four worker agents one at a time, then appends the run record to usage-logs. Agents and skills live on the main branch of a private repo. A dashboard is built from usage-logs.</desc>
+  <style>
+    .bg { fill: #fcfcfb; }
+    .zone { fill: #f3f2ee; stroke: #e1e0d9; }
+    .cloud { fill: #eef4fc; stroke: #cde2fb; }
+    .box { fill: #ffffff; stroke: #c3c2b7; }
+    .key { fill: #ffffff; stroke: #2a78d6; stroke-width: 1.5; }
+    .gate { fill: #fff6e0; stroke: #eda100; }
+    .boundary { fill: none; stroke: #eb6834; stroke-width: 2; stroke-dasharray: 8 6; }
+    .h { font: 600 15px system-ui, -apple-system, "Segoe UI", sans-serif; fill: #0b0b0b; }
+    .h2 { font: 600 13.5px system-ui, -apple-system, "Segoe UI", sans-serif; fill: #0b0b0b; }
+    .b { font: 12px system-ui, -apple-system, "Segoe UI", sans-serif; fill: #52514e; }
+    .m { font: 11.5px ui-monospace, SFMono-Regular, Menlo, monospace; fill: #52514e; }
+    .zl { font: 600 11px system-ui, -apple-system, "Segoe UI", sans-serif; fill: #898781; letter-spacing: .06em; }
+    .bl { font: 600 12px system-ui, -apple-system, "Segoe UI", sans-serif; fill: #c4501f; }
+    .flow { stroke: #2a78d6; stroke-width: 2; fill: none; }
+    .flow2 { stroke: #52514e; stroke-width: 1.5; fill: none; }
+    .ah { fill: #2a78d6; } .ah2 { fill: #52514e; }
+    .n { fill: #2a78d6; } .nt { font: 700 11px system-ui, sans-serif; fill: #ffffff; }
+    .fl { font: 12px system-ui, -apple-system, "Segoe UI", sans-serif; fill: #0b0b0b; }
+    .person { fill: #52514e; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #1a1a19; }
+      .zone { fill: #232321; stroke: #383835; }
+      .cloud { fill: #18263a; stroke: #1c5cab; }
+      .box { fill: #1a1a19; stroke: #52514e; }
+      .key { fill: #1a1a19; stroke: #3987e5; }
+      .gate { fill: #3a2e10; stroke: #c98500; }
+      .h, .h2, .fl { fill: #f0efec; }
+      .b, .m { fill: #c3c2b7; }
+      .bl { fill: #ec835a; }
+      .flow { stroke: #3987e5; } .ah, .n { fill: #3987e5; }
+      .flow2 { stroke: #c3c2b7; } .ah2, .person { fill: #c3c2b7; }
+    }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>
+    <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah2" d="M0,0 L10,5 L0,10 z"/></marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1280" height="720"/>
+  <text class="h" x="30" y="38">Gatehouse: one governed door to a private repo of Claude agents</text>
+  <text class="b" x="30" y="58">Numbers follow one run. Blue is the run path; gray is change control and reporting.</text>
+
+  <!-- Employees -->
+  <rect class="zone" x="30" y="150" width="180" height="200" rx="12"/>
+  <text class="zl" x="46" y="174">EMPLOYEES</text>
+  <circle class="person" cx="120" cy="214" r="15"/>
+  <path class="person" d="M92,262 a28,24 0 0 1 56,0 z"/>
+  <text class="h2" x="120" y="290" text-anchor="middle">Deal team, research</text>
+  <text class="b" x="120" y="310" text-anchor="middle">Sign in with SSO.</text>
+  <text class="b" x="120" y="327" text-anchor="middle">See a form and their</text>
+  <text class="b" x="120" y="342" text-anchor="middle">own results. Nothing else.</text>
+
+  <!-- Access boundary -->
+  <rect class="boundary" x="240" y="84" width="1015" height="530" rx="18"/>
+  <text class="bl" x="258" y="106">ACCESS BOUNDARY: employees cross it only through the gateway. No repo access, no API key, no direct agent calls.</text>
+
+  <!-- Gateway -->
+  <rect class="key" x="262" y="150" width="210" height="200" rx="12"/>
+  <text class="h2" x="278" y="176">Gatehouse gateway</text>
+  <text class="b" x="278" y="198">Resolves identity from SSO</text>
+  <text class="b" x="278" y="216">Checks allowlist and policy</text>
+  <text class="b" x="278" y="234">Screens input, caps cost</text>
+  <text class="b" x="278" y="252">Checks every step report</text>
+  <text class="b" x="278" y="270">Appends the run record</text>
+  <line x1="278" y1="282" x2="456" y2="282" stroke="#c3c2b7" stroke-width="1"/>
+  <text class="zl" x="278" y="298">HOLDS, AS A SERVICE</text>
+  <text class="b" x="278" y="314">Claude API key (one workspace)</text>
+  <text class="b" x="278" y="329">Repo token, read-only</text>
+  <text class="b" x="278" y="344">gatehouse-bot push identity</text>
+
+  <!-- Claude Managed Agents -->
+  <rect class="cloud" x="500" y="128" width="735" height="244" rx="14"/>
+  <text class="zl" x="518" y="152">CLAUDE MANAGED AGENTS · ANTHROPIC CLOUD · ONE SESSION PER RUN</text>
+
+  <rect class="key" x="518" y="168" width="190" height="192" rx="12"/>
+  <text class="h2" x="534" y="194">Orchestrator agent</text>
+  <text class="m" x="534" y="214">deal-desk-orchestrator</text>
+  <text class="b" x="534" y="236">Pinned agent version</text>
+  <text class="b" x="534" y="254">Session budget = run cap</text>
+  <text class="b" x="534" y="272">Roster of 4, inline agents off</text>
+  <text class="b" x="534" y="290">Workflows off: strictly</text>
+  <text class="b" x="534" y="306">one step at a time</text>
+  <text class="b" x="534" y="328">Validates each report</text>
+  <text class="b" x="534" y="344">before the next step</text>
+
+  <!-- Workers -->
+  <g>
+    <rect class="box" x="748" y="176" width="104" height="70" rx="10"/>
+    <text class="h2" x="800" y="202" text-anchor="middle">1 intake</text>
+    <text class="b" x="800" y="220" text-anchor="middle">normalize</text>
+    <text class="m" x="800" y="236" text-anchor="middle">effort low</text>
+
+    <rect class="box" x="866" y="176" width="104" height="70" rx="10"/>
+    <text class="h2" x="918" y="202" text-anchor="middle">2 research</text>
+    <text class="b" x="918" y="220" text-anchor="middle">sourced only</text>
+    <text class="m" x="918" y="236" text-anchor="middle">effort medium</text>
+
+    <rect class="box" x="984" y="176" width="104" height="70" rx="10"/>
+    <text class="h2" x="1036" y="202" text-anchor="middle">3 memo</text>
+    <text class="b" x="1036" y="220" text-anchor="middle">IC screening</text>
+    <text class="m" x="1036" y="236" text-anchor="middle">effort high</text>
+
+    <rect class="gate" x="1102" y="176" width="114" height="70" rx="10"/>
+    <text class="h2" x="1159" y="202" text-anchor="middle">4 QA gate</text>
+    <text class="b" x="1159" y="220" text-anchor="middle">read-only check</text>
+    <text class="m" x="1159" y="236" text-anchor="middle">effort high</text>
+  </g>
+  <path class="flow" d="M708,196 H742" marker-end="url(#a)"/>
+  <text class="b" x="748" y="166">brief: paths, run id, report format</text>
+  <path class="flow" d="M800,246 V276 M918,246 V276 M1036,246 V276 M1159,246 V276"/>
+  <path class="flow" d="M1159,276 H714" marker-end="url(#a)"/>
+  <text class="fl" x="748" y="298">each worker returns one schema-checked step report before the next starts</text>
+  <text class="b" x="748" y="326">Each worker: its own skill, narrow tools, web off by default.</text>
+  <text class="b" x="748" y="344">Repo mounted read-only at the logged commit. The token</text>
+  <text class="b" x="748" y="361">stays in Anthropic's git proxy, never in the sandbox.</text>
+
+  <!-- Private repo -->
+  <rect class="zone" x="262" y="410" width="973" height="186" rx="14"/>
+  <text class="zl" x="474" y="434">PRIVATE GITHUB REPO · MAINTAINERS ONLY</text>
+
+  <rect class="box" x="280" y="446" width="430" height="134" rx="12"/>
+  <text class="h2" x="296" y="472">branch usage-logs</text>
+  <text class="m" x="296" y="494">logs/runs/YYYY-MM.jsonl</text>
+  <text class="m" x="296" y="512">governance/allowlist.yaml · policy.yaml</text>
+  <text class="m" x="296" y="530">governance/audit.jsonl</text>
+  <text class="b" x="296" y="554">Append-only, hash-chained, verified on every build.</text>
+  <text class="b" x="296" y="571">Only gatehouse-bot can push. No force push, no delete.</text>
+
+  <rect class="box" x="790" y="446" width="426" height="134" rx="12"/>
+  <text class="h2" x="806" y="472">branch main</text>
+  <text class="m" x="806" y="494">agents/&lt;name&gt;/agent.md</text>
+  <text class="m" x="806" y="512">skills/&lt;name&gt;/SKILL.md · pipelines/ · schemas/</text>
+  <text class="b" x="806" y="536">Protected: 2 reviews, CODEOWNERS, tests.</text>
+  <text class="b" x="806" y="554">On merge, CI runs ant apply: each changed</text>
+  <text class="b" x="806" y="571">agent gets a new immutable version.</text>
+
+  <!-- Run path arrows -->
+  <path class="flow" d="M210,232 H256" marker-end="url(#a)"/>
+  <circle class="n" cx="232" cy="218" r="9"/><text class="nt" x="232" y="222" text-anchor="middle">1</text>
+
+  <path class="flow" d="M296,440 V356" marker-end="url(#a)"/>
+  <circle class="n" cx="296" cy="398" r="9"/><text class="nt" x="296" y="402" text-anchor="middle">2</text>
+  <text class="b" x="312" y="384">read allowlist</text>
+  <text class="b" x="312" y="399">and policy</text>
+
+  <path class="flow" d="M472,212 H512" marker-end="url(#a)"/>
+  <circle class="n" cx="491" cy="198" r="9"/><text class="nt" x="491" y="202" text-anchor="middle">3</text>
+
+  <circle class="n" cx="728" cy="186" r="9"/><text class="nt" x="728" y="190" text-anchor="middle">4</text>
+
+  <path class="flow" d="M512,264 H478" marker-end="url(#a)"/>
+  <circle class="n" cx="491" cy="280" r="9"/><text class="nt" x="491" y="284" text-anchor="middle">5</text>
+
+  <path class="flow" d="M440,356 V440" marker-end="url(#a)"/>
+  <circle class="n" cx="440" cy="398" r="9"/><text class="nt" x="440" y="402" text-anchor="middle">6</text>
+  <text class="b" x="456" y="384">append run record</text>
+  <text class="b" x="456" y="399">and audit events</text>
+
+  <!-- Change control -->
+  <path class="flow2" d="M1000,446 V378" marker-end="url(#a2)"/>
+  <text class="b" x="1010" y="420">ant apply, versioned agents</text>
+  <text class="b" x="1010" y="436">and skills</text>
+
+  <rect class="zone" x="790" y="634" width="426" height="62" rx="12"/>
+  <text class="h2" x="806" y="660">Maintainers (Applied AI team)</text>
+  <text class="b" x="806" y="680">Change agents and skills only by pull request.</text>
+  <path class="flow2" d="M1000,634 V586" marker-end="url(#a2)"/>
+
+  <!-- Dashboard -->
+  <rect class="zone" x="30" y="446" width="180" height="250" rx="12"/>
+  <text class="zl" x="46" y="470">MONITORING</text>
+  <rect class="box" x="46" y="484" width="148" height="74" rx="8"/>
+  <path d="M58,544 h18 v-16 h-18z M82,544 h18 v-30 h-18z M106,544 h18 v-22 h-18z M130,544 h18 v-40 h-18z" fill="#2a78d6" opacity=".85"/>
+  <text class="h2" x="46" y="584">Dashboard</text>
+  <text class="b" x="46" y="604">Static page built from</text>
+  <text class="b" x="46" y="620">usage-logs: runs, spend,</text>
+  <text class="b" x="46" y="636">failures, agents, people,</text>
+  <text class="b" x="46" y="652">policy violations.</text>
+  <text class="b" x="46" y="676">For leads and compliance.</text>
+  <path class="flow2" d="M280,512 H216" marker-end="url(#a2)"/>
+  <circle cx="246" cy="498" r="9" fill="#52514e"/><text class="nt" x="246" y="502" text-anchor="middle">7</text>
+</svg>

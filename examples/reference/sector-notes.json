@@ -1,0 +1,57 @@
+{
+  "_note": "Synthetic reference notes for the dry run. Not market data.",
+  "industrial services": {
+    "view": "Recurring maintenance contracts make up most revenue and hold up through cycles. Margins depend on technician utilization and pricing pass-through. Buy-and-build is the common value-creation plan.",
+    "comparables": [
+      {"name": "Comparable A (testing and inspection)", "year": 2025, "ev_ebitda_x": 12.4},
+      {"name": "Comparable B (facility maintenance)", "year": 2024, "ev_ebitda_x": 10.8},
+      {"name": "Comparable C (field services roll-up)", "year": 2025, "ev_ebitda_x": 11.6}
+    ],
+    "risks": [
+      {"risk": "Technician wage inflation compresses margins.", "severity": "medium", "mitigant": "Escalators in multi-year contracts."},
+      {"risk": "Integration risk across add-on acquisitions.", "severity": "medium", "mitigant": "Dedicated integration team and earn-outs."},
+      {"risk": "Top-ten customer concentration.", "severity": "low", "mitigant": "Contract renewals staggered over five years."}
+    ],
+    "questions": ["Break out revenue by contract type and renewal date.", "Provide technician headcount and utilization by region."]
+  },
+  "healthcare IT": {
+    "view": "Revenue cycle and clinical workflow software sells on multi-year subscriptions with high retention. Reimbursement policy changes are the main external risk. Lenders favor recurring revenue over EBITDA in this sector.",
+    "comparables": [
+      {"name": "Comparable D (revenue cycle SaaS)", "year": 2025, "ev_ebitda_x": 16.9},
+      {"name": "Comparable E (clinical documentation)", "year": 2024, "ev_ebitda_x": 18.2}
+    ],
+    "risks": [
+      {"risk": "Reimbursement rule changes reduce customer budgets.", "severity": "high", "mitigant": "Diversified payer mix across customers."},
+      {"risk": "Data-security incident at a hospital customer.", "severity": "medium", "mitigant": "Third-party audits and cyber covenant."},
+      {"risk": "Recurring-revenue loan structure leaves little equity cushion.", "severity": "medium", "mitigant": "Conversion to EBITDA covenants by year three."}
+    ],
+    "questions": ["Provide gross and net revenue retention for the last eight quarters.", "List the last three security audits and findings."]
+  },
+  "logistics real estate": {
+    "view": "Last-mile and bulk warehouses near population centers have run high occupancy with rent growth slowing from peak. Value depends on mark-to-market of in-place rents and cap-rate movement.",
+    "comparables": [
+      {"name": "Comparable F (urban infill portfolio)", "year": 2025, "ev_ebitda_x": 21.5},
+      {"name": "Comparable G (bulk distribution portfolio)", "year": 2024, "ev_ebitda_x": 19.0},
+      {"name": "Comparable H (cold storage)", "year": 2025, "ev_ebitda_x": 22.3}
+    ],
+    "risks": [
+      {"risk": "Cap-rate expansion lowers exit value.", "severity": "high", "mitigant": "Underwrite exit at entry cap rate plus 50bps."},
+      {"risk": "Tenant concentration in third-party logistics.", "severity": "medium", "mitigant": "Staggered lease expiries."},
+      {"risk": "Deferred roof and dock capex.", "severity": "low", "mitigant": "Seller credit at close."}
+    ],
+    "questions": ["Provide rent roll with mark-to-market by asset.", "Provide property condition reports."]
+  },
+  "digital infrastructure": {
+    "view": "Fiber and data-center assets sell on long contracts with inflation escalators. Power availability now limits new data-center supply. Capex intensity is high in the build phase.",
+    "comparables": [
+      {"name": "Comparable I (regional fiber)", "year": 2025, "ev_ebitda_x": 17.8},
+      {"name": "Comparable J (edge data centers)", "year": 2025, "ev_ebitda_x": 24.1}
+    ],
+    "risks": [
+      {"risk": "Power interconnection delays push out revenue.", "severity": "high", "mitigant": "Signed utility agreements before close."},
+      {"risk": "Construction cost overruns.", "severity": "high", "mitigant": "Fixed-price build contracts."},
+      {"risk": "Hyperscaler tenant concentration.", "severity": "medium", "mitigant": "Investment-grade counterparties, 10+ year terms."}
+    ],
+    "questions": ["Provide status of every power interconnection request.", "Provide the build budget with contingencies."]
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "deal_name": "Project Birch",
+  "source": "direct lending pipeline form (synthetic)",
+  "teaser": "Unitranche facility of $65M to refinance and fund growth at a revenue cycle software company. Recurring revenue $40M, 108% net retention.",
+  "fields": {
+    "asset_class": "private_credit",
+    "strategy": "direct_lending",
+    "sector": "healthcare IT",
+    "geography": "United States",
+    "deal_size_usd": 65000000,
+    "check_size_usd": 20000000,
+    "key_metrics": {"revenue_usd": 40000000, "leverage_x": 6.9, "irr_target": 0.11},
+    "sponsor": "Sponsor Two (synthetic)",
+    "deadline": "2026-11-21"
+  }
+}

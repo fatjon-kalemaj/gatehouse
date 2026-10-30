@@ -1,0 +1,16 @@
+{
+  "deal_name": "Project Driftwood",
+  "source": "infrastructure co-invest invitation (synthetic)",
+  "teaser": "Platform of edge data centers with 120MW contracted and 300MW in development. Enterprise value $1.2bn.",
+  "fields": {
+    "asset_class": "infrastructure",
+    "strategy": "growth",
+    "sector": "digital infrastructure",
+    "geography": "North America",
+    "deal_size_usd": 1200000000,
+    "check_size_usd": 60000000,
+    "key_metrics": {"ebitda_usd": 48000000, "leverage_x": 5.5, "irr_target": 0.14},
+    "sponsor": "Sponsor Three (synthetic)",
+    "deadline": "2027-01-15"
+  }
+}

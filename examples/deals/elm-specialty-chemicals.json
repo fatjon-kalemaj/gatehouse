@@ -1,0 +1,16 @@
+{
+  "deal_name": "Project Elm",
+  "source": "cold inbound email (synthetic)",
+  "teaser": "Carve-out of a specialty coatings business from a European conglomerate. Size not yet disclosed; management presentation next month.",
+  "fields": {
+    "asset_class": "private_equity",
+    "strategy": "carve_out",
+    "sector": "specialty chemicals",
+    "geography": "Western Europe",
+    "deal_size_usd": null,
+    "check_size_usd": null,
+    "key_metrics": {},
+    "sponsor": null,
+    "deadline": null
+  }
+}
